@@ -198,9 +198,10 @@
         path: "{{ item }}"
         state: absent
       loop:
-        - "/etc/update-motd.d/10-help-text"  # Update these paths with the actual files you want to remove
+        - "/etc/update-motd.d/10-help-text"
         - "/etc/update-motd.d/50-motd-news"
         - "/etc/update-motd.d/91-contract-ua-esm-status"
+        - "/etc/update-motd.d/50-landscape-sysinfo"
         - "/etc/update-motd.d/00-header"
         - "/etc/default/motd-news"
         - "/var/cache/motd-news"
