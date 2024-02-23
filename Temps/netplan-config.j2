@@ -1,0 +1,19 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eno2:
+      dhcp4: true
+  wifis:
+    wlo1:
+      dhcp4: no
+      dhcp6: no
+      access-points:
+        "CenturyLink6098_5G":
+          password: "4a7du74cad6a8v"
+      addresses: [192.168.0.2/24]
+      nameservers:
+        addresses: [192.168.0.1, 8.8.8.8]
+      routes:
+        - to: default
+          via: 192.168.0.1

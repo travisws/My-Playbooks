@@ -1,0 +1,243 @@
+---
+- name: Setup Ubuntu Server
+  hosts: ubuntu
+  become: true
+  vars:
+    ssh_port: ListenStream=8080
+
+  tasks:
+    - name: Remove remaining snap directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ ansible_env.HOME }}/snap"
+        - "/var/snap"
+        - "/var/lib/snapd"
+        - "/var/cache/snapd"
+
+    - name: Update apt cache and upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: true
+        cache_valid_time: 3600  # Optional: cache valid for 1 hour
+
+    - name: Install ZFS utilities
+      ansible.builtin.apt:
+        name: zfsutils-linux
+        state: present
+
+    - name: Check if ZFS module is loaded
+      ansible.builtin.command: modinfo zfs
+      register: modinfo_zfs
+      failed_when: modinfo_zfs.rc != 0
+      changed_when: false
+
+    - name: Load ZFS module
+      community.general.modprobe:
+        name: zfs
+        state: present
+      when: modinfo_zfs.rc != 0
+
+    - name: Ensure ZFS services are enabled and running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - zfs-import-cache
+        - zfs-import-scan
+        - zfs-mount
+        - zfs-share
+        - zfs-zed
+        - zfs.target
+
+    - name: Import all ZFS pools
+      ansible.builtin.command:
+       cmd: zpool import -a
+      ignore_errors: yes  # Use this if you want the playbook to continue even if no pools are available to import
+
+    - name: Check if ZFS dataset 'data/nextcloud/mariadb-data' exists
+      ansible.builtin.shell:
+        cmd: zfs list data/nextcloud/mariadb-data
+      register: zfs_list
+      ignore_errors: true
+      changed_when: false
+
+    - name: Create ZFS dataset with specific properties if it does not exist
+      community.general.zfs:
+        name: data/nextcloud/mariadb-data
+        state: present
+        extra_zfs_properties:
+          logbias: latency
+          recordsize: 64K
+      when: zfs_list.rc != 0
+
+    - name: Autoremove unnecessary packages
+      ansible.builtin.apt:
+        autoremove: true
+
+    - name: Add 'deathpoolops' user to 'docker' group
+      ansible.builtin.user:
+        name: deathpoolops
+        groups: docker
+        append: true
+
+    - name: Install Necessary Packages
+      ansible.builtin.apt:
+        name:
+          - htop
+          - git
+          - vim
+          - tmux
+          - nut
+          - qemu-kvm
+          - libvirt-daemon-system
+          - libvirt-clients
+          - bridge-utils
+          - cockpit
+          - cockpit-machines
+        state: present
+
+    - name: Start and enable Cockpit service
+      ansible.builtin.systemd:
+        name: cockpit.socket
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Ensure ZFS is installed (Ubuntu 23.10)
+      ansible.builtin.apt:
+        name: zfsutils-linux
+        state: present
+      when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '23.10'
+
+    - name: Set ZFS ARC min size to 20GB
+      ansible.builtin.lineinfile:
+        path: /etc/mod.d/zfs.conf
+        line: 'options zfs zfs_arc_min=21474836480'
+        create: true  # This will create the file if it does not exist
+        mode: "0600"
+      notify: Reload ZFS settings
+
+    - name: Set ZFS ARC max size to 100GB
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/zfs.conf
+        line: 'options zfs zfs_arc_max=107374182400'
+        create: true  # Ensures that the file is created if it does not exist
+        mode: "0600"
+      notify: Reload ZFS settings
+
+    - name: Set ZFS ARC min size to 30GB
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/zfs.conf
+        line: 'options zfs zfs_arc_min=32212254720'  # 30GB in bytes
+        create: true  # Ensures the file is created if it does not exist
+        mode: "0600"
+      notify: Reload ZFS settings
+
+    - name: Change SSH port
+      ansible.builtin.lineinfile:
+        path: /lib/systemd/system/ssh.socket
+        regexp: '^#?ListenStream=22'
+        line: "{{ ssh_port }}"
+        state: present
+      notify: Restart ssh service
+
+    - name: Disable password authentication
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config.d/50-cloud-init.conf
+        regexp: '^#?PasswordAuthentication'
+        line: "PasswordAuthentication no"
+        state: present
+      notify: Restart ssh service
+
+    - name: Configure network settings
+      template:
+        src: Temps/netplan-config.j2
+        dest: /etc/netplan/50-cloud-init.yaml
+      notify: Apply Netplan
+
+    - name: Configure UPS
+      ansible.builtin.blockinfile:
+        path: /etc/nut/ups.conf
+        block: |
+          [apcups]
+          driver = usbhid-ups
+          port = auto
+          desc = "APC UPS 1500"
+          create: true
+
+    - name: Set NUT permissions
+      ansible.builtin.blockinfile:
+        path: /etc/nut/upsd.users
+        block: |
+          [admin]
+          password = your_password
+          actions = SET
+          instcmds = ALL
+          upsmon master
+
+    - name: Configure UPS monitoring for shutdown
+      ansible.builtin.blockinfile:
+        path: /etc/nut/upsmon.conf
+        block: |
+          MONITOR apcups@localhost 1 admin your_password master
+          SHUTDOWNCMD "/sbin/shutdown -h +0"
+          create: true
+
+    - name: Set NUT mode
+      ansible.builtin.lineinfile:
+        path: /etc/nut/nut.conf
+        regexp: '^MODE='
+        line: 'MODE=standalone'
+        create: true
+
+    - name: Remove 10-help-text from login motd
+      file:
+        path: "/etc/update-motd.d/10-help-text"
+        state: absent
+
+    - name: "Remove motd files: {{ item }}"
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/etc/update-motd.d/10-help-text"  # Update these paths with the actual files you want to remove
+        - "/etc/update-motd.d/50-motd-news"
+        - "/etc/update-motd.d/91-contract-ua-esm-status"
+        - "/etc/update-motd.d/00-header"
+        - "/etc/default/motd-news"
+        - "/var/cache/motd-news"
+      loop_control:
+        label: "{{ item }}"
+
+    - name: Deploy the 00-zfs MOTD script
+      template:
+         src: Temps/00-zfs.j2
+         dest: /etc/update-motd.d/00-zfs
+         mode: '0755'
+
+  handlers:
+    - name: Reload ZFS settings
+      ansible.builtin.command: update-initramfs -u
+      listen: Reload ZFS settings
+      register: zfssettings
+      changed_when: zfssettings.rc != 0
+
+    - name: Restart NUT services
+      ansible.builtin.systemd:
+         name: "{{ item }}"
+         state: restarted
+         enabled: true
+      loop:
+         - nut-server
+         - nut-monitor
+
+    - name: Restart ssh service
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+    - name: Apply Netplan
+      command: netplan apply
