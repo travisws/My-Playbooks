@@ -193,11 +193,6 @@
         line: 'MODE=standalone'
         create: true
 
-    - name: Remove 10-help-text from login motd
-      file:
-        path: "/etc/update-motd.d/10-help-text"
-        state: absent
-
     - name: "Remove motd files: {{ item }}"
       file:
         path: "{{ item }}"
