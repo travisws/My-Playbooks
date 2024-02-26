@@ -68,6 +68,7 @@
         - data/docker
         - data/family
         - data/family/Emileigh
+        - data/family/Mom
       when: item not in zfs_facts.zfs_filesystems
 
 # Nextcloud dataset properties
@@ -104,6 +105,18 @@
           checksum: sha256
           redundant_metadata: most
           primarycache: metadata
+
+# Emileigh dataset properties
+    - name: Set properties for '/data/family/Mom' dataset
+      community.general.zfs:
+        name: data/family/Mom
+        state: present
+        extra_zfs_properties:
+          mountpoint: /data/family/Mom
+          recordsize: 128K
+          atime: off
+          compression: lz4
+          checksum: sha256
 
 # Emileigh dataset properties
     - name: Set properties for '/data/family/Emileigh' dataset
