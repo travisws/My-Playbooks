@@ -19,6 +19,7 @@
         upgrade: true
         cache_valid_time: 3600  # Optional: cache valid for 1 hour
 
+    # ZFS install and load of module
     - name: Install ZFS utilities
       ansible.builtin.apt:
         name: zfsutils-linux
@@ -263,7 +264,7 @@
     - name: Get swap file name from /etc/fstab
       ansible.builtin.shell: grep swap /etc/fstab | awk '{print $1}'
       register: swap_file_name
-      changed_when: false  # This is to prevent Ansible from thinking a change has always occurred
+      changed_when: false
 
     - name: Remove swap file entry from /etc/fstab
       ansible.builtin.lineinfile:
