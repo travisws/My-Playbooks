@@ -158,14 +158,6 @@
         state: present
       when: ansible_distribution == 'Ubuntu' and ansible_distribution_version == '23.10'
 
-    - name: Set ZFS ARC min size to 20GB
-      ansible.builtin.lineinfile:
-        path: /etc/mod.d/zfs.conf
-        line: 'options zfs zfs_arc_min=21474836480'
-        create: true
-        mode: "0600"
-      notify: Reload ZFS settings
-
     - name: Set ZFS ARC max size to 100GB
       ansible.builtin.lineinfile:
         path: /etc/modprobe.d/zfs.conf
