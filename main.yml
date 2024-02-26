@@ -66,10 +66,11 @@
         - data/nextcloud
         - data/nextcloud/mariadb-data
         - data/docker
-        - data/Family
+        - data/family
+        - data/family/Emileigh
       when: item not in zfs_facts.zfs_filesystems
 
-# Nextcloud properties
+# Nextcloud dataset properties
     - name: Set properties for 'data/nextcloud' dataset
       community.general.zfs:
         name: data/nextcloud
@@ -79,7 +80,7 @@
           compression: lz4
           checksum: sha256
 
-# palworld ZFS dataset
+# palworld dataset properties
     - name: Set properties for 'data/palworld' dataset
       community.general.zfs:
         name: data/nextcloud
@@ -89,7 +90,7 @@
           compression: lz4
           checksum: sha256
 
-# Nextcloud ZFS dataset
+# Nextcloud dataset properties
     - name: Set properties for 'data/nextcloud/mariadb-data' dataset
       community.general.zfs:
         name: data/nextcloud/mariadb-data
@@ -104,7 +105,19 @@
           redundant_metadata: most
           primarycache: metadata
 
-#Docker ZFS dataset
+# Emileigh dataset properties
+    - name: Set properties for '/data/family/Emileigh' dataset
+      community.general.zfs:
+        name: data/family/Emileigh
+        state: present
+        extra_zfs_properties:
+          mountpoint: /data/family/Emileigh
+          recordsize: 128K
+          atime: off
+          compression: lz4
+          checksum: sha256
+
+#Docker dataset properties
     - name: Ensure Docker directory exists
       ansible.builtin.file:
         path: /var/lib/docker
