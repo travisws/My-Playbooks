@@ -35,6 +35,10 @@
         - cockpit-machines
       state: present
 
+    - name: Autoremove unnecessary packages
+      ansible.builtin.apt:
+        autoremove: true
+
     # ZFS install and load of module
     - name: Install ZFS utilities
       ansible.builtin.apt:
@@ -173,10 +177,6 @@
             "data-root": "/var/lib/docker"
           }
       notify: restart docker
-
-    - name: Autoremove unnecessary packages
-      ansible.builtin.apt:
-        autoremove: true
 
     - name: Add 'deathpoolops' user to 'docker' group
       ansible.builtin.user:
