@@ -52,6 +52,23 @@
         - zfs-zed
         - zfs.target
 
+    #Nextcloud ZFS dataset
+    - name: Check if ZFS dataset 'data/nextcloud' exists
+      ansible.builtin.shell:
+        cmd: zfs list data/nextcloud
+      register: nextcloud_list
+      ignore_errors: true
+      changed_when: false
+
+    - name: Create ZFS dataset 'data/nextcloud' with specific properties if it does not exist
+      community.general.zfs:
+        name: data/nextcloud
+        state: present
+        extra_zfs_properties:
+          atime: off
+          compression: lz4
+      when: nextcloud_list.rc != 0
+
     # Nextcloud ZFS dataset
     - name: Check if ZFS dataset 'data/nextcloud/mariadb-data' exists
       ansible.builtin.shell:
@@ -65,6 +82,7 @@
         name: data/nextcloud/mariadb-data
         state: present
         extra_zfs_properties:
+          mountpoint: /data/nextcloud/mariadb-data
           logbias: latency
           recordsize: 64K
           atime: off
