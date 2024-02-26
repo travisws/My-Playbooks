@@ -255,6 +255,27 @@
          dest: /etc/update-motd.d/00-zfs
          mode: '0755'
 
+    #Remove swap file on system
+    - name: Turn off all swap devices
+      ansible.builtin.command: swapoff -a
+      changed_when: false
+
+    - name: Get swap file name from /etc/fstab
+      ansible.builtin.shell: grep swap /etc/fstab | awk '{print $1}'
+      register: swap_file_name
+      changed_when: false  # This is to prevent Ansible from thinking a change has always occurred
+
+    - name: Remove swap file entry from /etc/fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^{{ swap_file_name.stdout }}'
+        state: absent
+
+    - name: Remove swap file
+      ansible.builtin.file:
+        path: "{{ swap_file_name.stdout }}"
+        state: absent
+
   handlers:
     - name: Reload ZFS settings
       ansible.builtin.command: update-initramfs -u
