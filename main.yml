@@ -65,6 +65,7 @@
         extra_zfs_properties:
           atime: off
           compression: lz4
+          checksum: sha256
       when: nextcloud_list.rc != 0
 
     # Nextcloud ZFS dataset
@@ -82,9 +83,11 @@
         extra_zfs_properties:
           mountpoint: /data/nextcloud/mariadb-data
           logbias: latency
-          recordsize: 64K
+          recordsize: 32K
           atime: off
           compression: lz4
+          checksum: sha256
+          redundant_metadata: most
       when: zfs_list.rc != 0
 
     #Docker ZFS dataset
@@ -107,6 +110,7 @@
           mountpoint: /var/lib/docker
           compression: lz4
           atime: off
+          checksum: sha256
       when: dataset_check.rc != 0
 
     - name: Configure Docker to use ZFS storage driver
