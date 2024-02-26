@@ -48,17 +48,29 @@
         - zfs-mount
         - zfs-share
         - zfs-zed
-        - zfs.target
+        - zfs.
 
-    #Nextcloud ZFS dataset
-    - name: Check if ZFS dataset 'data/nextcloud' exists
-      ansible.builtin.shell:
-        cmd: zfs list data/nextcloud
-      register: nextcloud_list
-      ignore_errors: true
-      changed_when: false
+# Create if ZFS datasets exist if not create them
+    - name: Gather ZFS facts
+      community.general.zfs_facts:
+        pools: all
+        filesystems: yes
+      register: zfs_facts
 
-    - name: Create ZFS dataset 'data/nextcloud' with specific properties if it does not exist
+    - name: Create ZFS datasets if they do not exist
+      community.general.zfs:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - data/palworld
+        - data/nextcloud
+        - data/nextcloud/mariadb-data
+        - data/docker
+        - data/Family
+      when: item not in zfs_facts.zfs_filesystems
+
+# Nextcloud properties
+    - name: Set properties for 'data/nextcloud' dataset
       community.general.zfs:
         name: data/nextcloud
         state: present
@@ -66,17 +78,19 @@
           atime: off
           compression: lz4
           checksum: sha256
-      when: nextcloud_list.rc != 0
 
-    # Nextcloud ZFS dataset
-    - name: Check if ZFS dataset 'data/nextcloud/mariadb-data' exists
-      ansible.builtin.shell:
-        cmd: zfs list data/nextcloud/mariadb-data
-      register: mariadb_data
-      ignore_errors: true
-      changed_when: false
+# palworld ZFS dataset
+    - name: Set properties for 'data/palworld' dataset
+      community.general.zfs:
+        name: data/nextcloud
+        state: present
+        extra_zfs_properties:
+          atime: off
+          compression: lz4
+          checksum: sha256
 
-    - name: Create ZFS dataset with specific properties if it does not exist
+# Nextcloud ZFS dataset
+    - name: Set properties for 'data/nextcloud/mariadb-data' dataset
       community.general.zfs:
         name: data/nextcloud/mariadb-data
         state: present
@@ -88,21 +102,15 @@
           compression: lz4
           checksum: sha256
           redundant_metadata: most
-      when: mariadb_data.rc != 0
+          primarycache: metadata
 
-    #Docker ZFS dataset
-    - name: Check if ZFS dataset 'data/docker' exists
-      ansible.builtin.command: zfs list data/docker
-      register: dataset_check
-      ignore_errors: true
-      changed_when: false
-
+#Docker ZFS dataset
     - name: Ensure Docker directory exists
       ansible.builtin.file:
         path: /var/lib/docker
         state: directory
 
-    - name: Create ZFS dataset with specific properties if it does not exist
+    - name: Set properties for 'data/docker' dataset
       community.general.zfs:
         name: data/docker
         state: present
@@ -111,7 +119,6 @@
           compression: lz4
           atime: off
           checksum: sha256
-      when: dataset_check.rc != 0
 
     - name: Configure Docker to use ZFS storage driver
       ansible.builtin.blockinfile:
