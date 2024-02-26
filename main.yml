@@ -21,7 +21,7 @@
 
     - name: Install Necessary Packages
       ansible.builtin.apt:
-      name:
+       name:
         - htop
         - git
         - vim
@@ -135,7 +135,7 @@
           mountpoint: /data/family/Mom
           recordsize: 128K
           atime: off
-          compression: lz4
+          compression: gzip-9
           checksum: sha256
 
 # Emileigh dataset properties
@@ -147,7 +147,7 @@
           mountpoint: /data/family/Emileigh
           recordsize: 128K
           atime: off
-          compression: lz4
+          compression: gzip-9
           checksum: sha256
 
 #Docker dataset properties
@@ -303,17 +303,20 @@
       ansible.builtin.shell: grep swap /etc/fstab | awk '{print $1}'
       register: swap_file_name
       changed_when: false
+      failed_when: swap_file_name.stdout == ""
 
     - name: Remove swap file entry from /etc/fstab
       ansible.builtin.lineinfile:
         path: /etc/fstab
         regexp: '^{{ swap_file_name.stdout }}'
         state: absent
+      when: swap_file_name.stdout != ""
 
     - name: Remove swap file
       ansible.builtin.file:
         path: "{{ swap_file_name.stdout }}"
         state: absent
+      when: swap_file_name.stdout != ""
 
   handlers:
     - name: Reload ZFS settings
@@ -321,6 +324,7 @@
       listen: Reload ZFS settings
       register: zfssettings
       changed_when: zfssettings.rc != 0
+      ignore_errors: true
 
     - name: Restart NUT services
       ansible.builtin.systemd:
