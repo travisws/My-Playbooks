@@ -2,9 +2,6 @@
 - name: Setup Ubuntu Server
   hosts: ubuntu
   become: true
-  vars:
-    ssh_port: ListenStream=8080
-
   tasks:
     - name: Remove remaining snap directories
       ansible.builtin.file:
@@ -189,7 +186,7 @@
       ansible.builtin.lineinfile:
         path: /lib/systemd/system/ssh.socket
         regexp: '^#?ListenStream=22'
-        line: "{{ ssh_port }}"
+        line: "ListenStream=8080"
         state: present
       notify: Restart ssh service
 
