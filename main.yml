@@ -19,6 +19,22 @@
         upgrade: true
         cache_valid_time: 3600  # Optional: cache valid for 1 hour
 
+    - name: Install Necessary Packages
+      ansible.builtin.apt:
+      name:
+        - htop
+        - git
+        - vim
+        - tmux
+        - nut
+        - qemu-kvm
+        - libvirt-daemon-system
+        - libvirt-clients
+        - bridge-utils
+        - cockpit
+        - cockpit-machines
+      state: present
+
     # ZFS install and load of module
     - name: Install ZFS utilities
       ansible.builtin.apt:
@@ -167,22 +183,6 @@
         name: deathpoolops
         groups: docker
         append: true
-
-    - name: Install Necessary Packages
-      ansible.builtin.apt:
-        name:
-          - htop
-          - git
-          - vim
-          - tmux
-          - nut
-          - qemu-kvm
-          - libvirt-daemon-system
-          - libvirt-clients
-          - bridge-utils
-          - cockpit
-          - cockpit-machines
-        state: present
 
     - name: Start and enable Cockpit service
       ansible.builtin.systemd:
