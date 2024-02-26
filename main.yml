@@ -72,7 +72,7 @@
     - name: Check if ZFS dataset 'data/nextcloud/mariadb-data' exists
       ansible.builtin.shell:
         cmd: zfs list data/nextcloud/mariadb-data
-      register: zfs_list
+      register: mariadb_data
       ignore_errors: true
       changed_when: false
 
@@ -88,7 +88,7 @@
           compression: lz4
           checksum: sha256
           redundant_metadata: most
-      when: zfs_list.rc != 0
+      when: mariadb_data.rc != 0
 
     #Docker ZFS dataset
     - name: Check if ZFS dataset 'data/docker' exists
