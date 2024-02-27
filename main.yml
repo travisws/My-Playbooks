@@ -33,6 +33,7 @@
         - bridge-utils
         - cockpit
         - cockpit-machines
+        - zram-config
       state: present
 
     - name: Autoremove unnecessary packages
@@ -178,6 +179,7 @@
           }
       notify: restart docker
 
+# Add 'deathpoolops' user to 'docker' group
     - name: Add 'deathpoolops' user to 'docker' group
       ansible.builtin.user:
         name: deathpoolops
@@ -191,6 +193,7 @@
         enabled: true
         daemon_reload: true
 
+# Set ZFS ARC size for max and min size
     - name: Ensure ZFS is installed (Ubuntu 23.10)
       ansible.builtin.apt:
         name: zfsutils-linux
@@ -213,6 +216,7 @@
         mode: "0600"
       notify: Reload ZFS settings
 
+# Configure SSH port and disable password authentication
     - name: Change SSH port
       ansible.builtin.lineinfile:
         path: /lib/systemd/system/ssh.socket
@@ -229,12 +233,14 @@
         state: present
       notify: Restart ssh service
 
+# Configure network settings
     - name: Configure network settings
       template:
         src: Temps/netplan-config.j2
         dest: /etc/netplan/50-cloud-init.yaml
       notify: Apply Netplan
 
+# NUT UPS configuration
     - name: Configure UPS
       ansible.builtin.blockinfile:
         path: /etc/nut/ups.conf
@@ -270,6 +276,7 @@
         line: 'MODE=standalone'
         create: true
 
+# Remove motd files, then add custom motd file
     - name: "Remove motd files: {{ item }}"
       file:
         path: "{{ item }}"
@@ -294,7 +301,20 @@
          dest: /etc/update-motd.d/00-zfs
          mode: '0755'
 
-    #Remove swap file on system
+#Set git global author name and email
+    - name: Set git global author name
+      community.general.git_config:
+        name: user.name
+        value: "travisws"
+        scope: global
+
+    - name: Set git global author email
+      community.general.git_config:
+         name: user.email
+         value: "traviswoodworthsmith@gmail.com"
+         scope: global
+
+#Remove swap file on system
     - name: Turn off all swap devices
       ansible.builtin.command: swapoff -a
       changed_when: false
@@ -317,6 +337,34 @@
         path: "{{ swap_file_name.stdout }}"
         state: absent
       when: swap_file_name.stdout != ""
+
+# Zram install and configuration
+    - name: Allocate ZRAM device with specific size
+      ansible.builtin.command:
+        cmd: "zramctl --find --size 100G"
+        warn: false
+      register: zram_device
+      changed_when: "zram_device.stdout != ''"
+      failed_when: "zram_device.rc != 0"
+
+    - name: Make swap on the ZRAM device
+      ansible.builtin.command:
+        cmd: "mkswap {{ zram_device.stdout }}"
+        warn: false
+      when: zram_device.changed
+
+    - name: Enable swap on the ZRAM device with high priority
+      ansible.builtin.command:
+        cmd: "swapon --priority 100 {{ zram_device.stdout }}"
+        warn: false
+      when: zram_device.changed
+
+    - name: Adjust vm.swappiness to encourage ZRAM usage
+      ansible.builtin.sysctl:
+        name: vm.swappiness
+        value: "100"
+        state: present
+        reload: yes
 
   handlers:
     - name: Reload ZFS settings
