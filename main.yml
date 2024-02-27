@@ -69,28 +69,38 @@
         - zfs-mount
         - zfs-share
         - zfs-zed
-        - zfs.
+        - zfs.target
 
 # Create if ZFS datasets exist if not create them
-    - name: Gather ZFS facts
-      community.general.zfs_facts:
-        pools: all
-        filesystems: yes
-      register: zfs_facts
+    - name: List all ZFS datasets
+      ansible.builtin.command: zfs list -H -o name
+      register: zfs_list_output
+      changed_when: false
 
-    - name: Create ZFS datasets if they do not exist
-      community.general.zfs:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - data/palworld
-        - data/nextcloud
-        - data/nextcloud/mariadb-data
-        - data/docker
-        - data/family
-        - data/family/Emileigh
-        - data/family/Mom
-      when: item not in zfs_facts.zfs_filesystems
+    - name: Check dataset existence and create if not exists
+      block:
+        - name: Set fact for dataset existence
+          set_fact:
+            dataset_exists: "{{ item in zfs_list_output.stdout_lines }}"
+          loop:
+            - data/palworld
+            - data/nextcloud
+            - data/nextcloud/mariadb-data
+            - data/docker
+            - data/family
+            - data/family/Emileigh
+            - data/family/Mom
+          register: dataset_existence_check
+
+        - name: Create ZFS dataset
+          community.general.zfs:
+            name: "{{ item.item }}"
+            state: present
+          loop: "{{ dataset_existence_check.results }}"
+          when: not item.ansible_facts.dataset_exists
+          loop_control:
+            label: "{{ item.item }}"
+      tags: create_datasets
 
 # Nextcloud dataset properties
     - name: Set properties for 'data/nextcloud' dataset
