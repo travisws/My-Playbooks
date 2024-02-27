@@ -1,0 +1,26 @@
+[Unit]
+Description=ZRAM Setup Service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '\
+  modinfo zram; \
+  swapoff -a; \
+  zramctl --reset /dev/zram0; \
+  zramctl --reset /dev/zram1; \
+  zramctl --reset /dev/zram2; \
+  zramctl -f -s {{ zram_size }} -a lz4; \
+  mkswap /dev/zram0; \
+  swapon /dev/zram0; \
+  swapon --priority {{ swapon_priority }} /dev/zram0; \
+  sysctl vm.swappiness={{ swappiness }}'
+RemainAfterExit=yes
+ExecStartPre=/bin/true
+ExecStartPost=/bin/true
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
