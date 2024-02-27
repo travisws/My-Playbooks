@@ -208,7 +208,7 @@
         enabled: true
         daemon_reload: true
 
-# Set ZFS ARC size for max and min size
+# Set ZFS ARC size for max and min size and reload settings
     - name: Ensure ZFS is installed (Ubuntu 23.10)
       ansible.builtin.apt:
         name: zfsutils-linux
@@ -227,6 +227,14 @@
       ansible.builtin.lineinfile:
         path: /etc/modprobe.d/zfs.conf
         line: 'options zfs zfs_arc_min=32212254720'  # 30GB in bytes
+        create: true
+        mode: "0600"
+      notify: Reload ZFS settings
+
+    - name: Set ZFS l2arc_rebuild_enabled=1
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/zfs.conf
+        line: 'options zfs l2arc_rebuild_enabled=1'
         create: true
         mode: "0600"
       notify: Reload ZFS settings
