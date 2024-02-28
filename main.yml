@@ -165,7 +165,7 @@
          mountpoint: /data/virtual-machines/images
          recordsize: 1M
          atime: off
-         compression: lz4
+         compression: gzip-9
          checksum: sha256
 
 # Emileigh dataset properties
