@@ -226,7 +226,7 @@
     - name: Set ZFS ARC min size to 30GB
       ansible.builtin.lineinfile:
         path: /etc/modprobe.d/zfs.conf
-        line: 'options zfs zfs_arc_min=32212254720'  # 30GB in bytes
+        line: 'options zfs zfs_arc_min=107374182400' #32212254720'  # 30GB in bytes
         create: true
         mode: "0600"
       notify: Reload ZFS settings
