@@ -95,6 +95,8 @@
             - data/family
             - data/family/Emileigh
             - data/family/Mom
+            - data/virtual-machines
+            - data/virtual-machines/images
           register: dataset_existence_check
 
         - name: Create ZFS dataset
@@ -127,7 +129,7 @@
           compression: lz4
           checksum: sha256
 
-# Nextcloud dataset properties
+# Nextcloud/mariadb-data dataset properties
     - name: Set properties for 'data/nextcloud/mariadb-data' dataset
       community.general.zfs:
         name: data/nextcloud/mariadb-data
@@ -141,6 +143,30 @@
           checksum: sha256
           redundant_metadata: most
           primarycache: metadata
+
+# virtual-machines dataset properties
+    - name: Set properties for 'data/virtual-machines' dataset
+      community.general.zfs:
+        name: data/virtual-machines
+        state: present
+        extra_zfs_properties:
+         mountpoint: /data/virtual-machines
+         recordsize: 128K
+         atime: off
+         compression: lz4
+         checksum: sha256
+
+# virtual-machines/images dataset properties
+    - name: Set properties for 'data/virtual-machines/images' dataset
+      community.general.zfs:
+        name: data/virtual-machines/images
+        state: present
+        extra_zfs_properties:
+         mountpoint: /data/virtual-machines/images
+         recordsize: 1M
+         atime: off
+         compression: lz4
+         checksum: sha256
 
 # Emileigh dataset properties
     - name: Set properties for '/data/family/Mom' dataset
@@ -218,7 +244,7 @@
     - name: Set ZFS ARC max size to 100GB
       ansible.builtin.lineinfile:
         path: /etc/modprobe.d/zfs.conf
-        line: 'options zfs zfs_arc_max=107374182400'
+        line: 'options zfs zfs_arc_max=214748364800' # 107374182400
         create: true
         mode: "0600"
       notify: Reload ZFS settings
@@ -231,10 +257,18 @@
         mode: "0600"
       notify: Reload ZFS settings
 
-    - name: Set ZFS l2arc_rebuild_enabled=1
+    - name: Set ZFS 'l2arc_rebuild_enabled=1'
       ansible.builtin.lineinfile:
         path: /etc/modprobe.d/zfs.conf
         line: 'options zfs l2arc_rebuild_enabled=1'
+        create: true
+        mode: "0600"
+      notify: Reload ZFS settings
+
+    - name: Set ZFS 'zfs zfs_txg_timeout=30'
+      ansible.builtin.lineinfile:
+        path: /etc/modprobe.d/zfs.conf
+        line: 'options zfs zfs_txg_timeout=300'
         create: true
         mode: "0600"
       notify: Reload ZFS settings
