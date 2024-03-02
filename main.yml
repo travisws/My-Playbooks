@@ -400,6 +400,3 @@
       ansible.builtin.service:
         name: ssh
         state: restarted
-
-    - name: Apply Netplan
-      command: netplan apply
