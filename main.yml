@@ -257,14 +257,6 @@
         mode: "0600"
       notify: Reload ZFS settings
 
-    - name: Set ZFS 'l2arc_rebuild_enabled=1'
-      ansible.builtin.lineinfile:
-        path: /etc/modprobe.d/zfs.conf
-        line: 'options zfs l2arc_rebuild_enabled=1'
-        create: true
-        mode: "0600"
-      notify: Reload ZFS settings
-
     - name: Set ZFS 'zfs zfs_txg_timeout=30'
       ansible.builtin.lineinfile:
         path: /etc/modprobe.d/zfs.conf
