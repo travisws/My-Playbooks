@@ -282,13 +282,6 @@
         state: present
       notify: Restart ssh service
 
-# Configure network settings
-    - name: Configure network settings
-      template:
-        src: Temps/netplan-config.j2
-        dest: /etc/netplan/50-cloud-init.yaml
-      notify: Apply Netplan
-
 # NUT UPS configuration
     - name: Configure UPS
       ansible.builtin.blockinfile:
