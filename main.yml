@@ -200,14 +200,13 @@
         path: /var/lib/docker
         state: directory
 
-    - name: Set properties for 'zroot/data/docker' dataset
+    - name: Set properties for 'zroot/ubuntu/docker' dataset
       community.general.zfs:
-        name: zpool/data/docker
+        name: zroot/ubuntu/docker
         state: present
         extra_zfs_properties:
           mountpoint: /var/lib/docker
           recordsize: 8K
-          compression: lz4
           atime: off
           checksum: sha256
 
