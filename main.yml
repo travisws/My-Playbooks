@@ -262,7 +262,7 @@
 
     - name: Disable password authentication
       ansible.builtin.lineinfile:
-        path: /etc/ssh/sshd_config.d/50-cloud-init.conf
+        path: /etc/ssh/sshd_config
         regexp: '^#?PasswordAuthentication'
         line: "PasswordAuthentication no"
         state: present
@@ -328,6 +328,14 @@
          src: Temps/00-zfs.j2
          dest: /etc/update-motd.d/00-zfs
          mode: '0755'
+
+    - name: Replace .bashrc file with custom content
+      ansible.builtin.template:
+        src: Temp/bashrc.j2
+        dest: /root/.bashrc
+        owner: root
+        group: root
+        mode: '0644'
 
 #Set git global author name and email
     - name: Set git global author name
