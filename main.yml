@@ -221,13 +221,6 @@
           }
       notify: restart docker
 
-# Add 'deathpoolops' user to 'docker' group
-    - name: Add 'deathpoolops' user to 'docker' group
-      ansible.builtin.user:
-        name: deathpoolops
-        groups: docker
-        append: true
-
     - name: Start and enable Cockpit service
       ansible.builtin.systemd:
         name: cockpit.socket
@@ -254,14 +247,6 @@
       ansible.builtin.lineinfile:
         path: /etc/modprobe.d/zfs.conf
         line: 'options zfs zfs_arc_min=107374182400' #32212254720'  # 30GB in bytes
-        create: true
-        mode: "0600"
-      notify: Reload ZFS settings
-
-    - name: Set ZFS 'zfs zfs_txg_timeout=30'
-      ansible.builtin.lineinfile:
-        path: /etc/modprobe.d/zfs.conf
-        line: 'options zfs zfs_txg_timeout=300'
         create: true
         mode: "0600"
       notify: Reload ZFS settings
