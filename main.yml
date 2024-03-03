@@ -100,6 +100,17 @@
             label: "{{ item.item }}"
       tags: create_datasets
 
+# Emileigh dataset properties
+    - name: Set properties for 'zroot/data' dataset
+      community.general.zfs:
+        name: zroot/data
+        state: present
+        extra_zfs_properties:
+          mountpoint: /data
+          atime: off
+          compression: lz4
+          checksum: sha256
+
 # Nextcloud dataset properties
     - name: Set properties for 'zroot/data/nextcloud' dataset
       community.general.zfs:
