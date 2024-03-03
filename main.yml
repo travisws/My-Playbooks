@@ -219,6 +219,7 @@
             "storage-driver": "zfs",
             "data-root": "/var/lib/docker"
           }
+        marker: ""
       notify: restart docker
 
     - name: Start and enable Cockpit service
@@ -324,14 +325,14 @@
         label: "{{ item }}"
 
     - name: Deploy the 00-zfs MOTD script
-      template:
+      ansible.builtin.template:
          src: Temps/00-zfs.j2
          dest: /etc/update-motd.d/00-zfs
          mode: '0755'
 
     - name: Replace .bashrc file with custom content
       ansible.builtin.template:
-        src: Temp/bashrc.j2
+        src: Temps/bashrc.j2
         dest: /root/.bashrc
         owner: root
         group: root
