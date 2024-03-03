@@ -8,16 +8,6 @@
     swappiness: 100
 
   tasks:
-    - name: Remove remaining snap directories
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - "{{ ansible_env.HOME }}/snap"
-        - "/var/snap"
-        - "/var/lib/snapd"
-        - "/var/cache/snapd"
-
     - name: Update apt cache and upgrade packages
       ansible.builtin.apt:
         update_cache: true
