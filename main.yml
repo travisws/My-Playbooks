@@ -83,7 +83,6 @@
             - zroot/data/palworld
             - zroot/data/nextcloud
             - zroot/data/nextcloud/mariadb-data
-            - zroot/ubuntu/docker
             - zroot/data/family
             - zroot/data/family/Emileigh
             - zroot/data/family/Mom
@@ -200,35 +199,6 @@
       ansible.builtin.file:
         path: /var/lib/docker
         state: directory
-
-    - name: Set properties for 'zroot/ubuntu/docker' dataset
-      community.general.zfs:
-        name: zroot/ubuntu/docker
-        state: present
-        extra_zfs_properties:
-          mountpoint: /var/lib/docker
-          recordsize: 8K
-          atime: off
-          checksum: sha256
-
-    - name: Configure Docker to use ZFS storage driver
-      ansible.builtin.blockinfile:
-        path: /etc/docker/daemon.json
-        create: yes
-        block: |
-          {
-            "storage-driver": "zfs",
-            "data-root": "/var/lib/docker"
-          }
-        marker: ""
-      notify: restart docker
-
-    - name: Start and enable Cockpit service
-      ansible.builtin.systemd:
-        name: cockpit.socket
-        state: started
-        enabled: true
-        daemon_reload: true
 
 # Set ZFS ARC size for max and min size and reload settings
     - name: Ensure ZFS is installed (Ubuntu 23.10)
